@@ -522,3 +522,7 @@ end)
 RightGroupBox:AddButton("Load IY", function()
 loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
 end)
+
+RightGroupBox:AddButton("Load universal silent aim", function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/pyBIrtat/SilentAim/refs/heads/main/Silent.lua"))()
+end)
