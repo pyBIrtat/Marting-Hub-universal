@@ -525,6 +525,12 @@ end)
 RightGroupBox:AddButton("Load universal silent aim", function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/pyBIrtat/SilentAim/refs/heads/main/Silent.lua"))()
 end)
+
+RightGroupBox:AddButton("Load grok shit", function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/pyBIrtat/SilentAim/refs/heads/main/sumgrokshit"))()
+end)
+
+MenuGroup:AddDivider()
 local labba = RightGroupBox:AddLabel("Menu bind")
 labba:AddKeyPicker("MenuKeybind", {
     Text = "Example Keybind",
