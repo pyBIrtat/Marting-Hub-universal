@@ -3,9 +3,13 @@ local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/refs/heads/main/Library.lua"))()
 local Window = Library:CreateWindow({
     Title = "Marting Hub",
-    Footer = "version: v1",
-    NotifySide = "Right",
+    Footer = "",
     Font = Enum.Font.Gotham,
+    NotifySide = "Right",
+    Resizable = false,
+    DisableSearch = true,
+    EnableCompacting = false,
+    CornerRadius = 0,
 })
 local Options = Library.Options
 -- Roblox LocalScript: Camera Flick Aim + Toggleable M2 Spam (8.33 CPS / 0.12s)
