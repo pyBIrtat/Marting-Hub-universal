@@ -29,20 +29,26 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
-local FLICK_DURATION = 0.005 -- Flick speed (lower = faster)
-local MAX_DISTANCE = math.huge -- Max target distance
-local CLICK_INTERVAL = 0.12 -- Spam speed (0.12s = ~8.33 CPS)
-local CLICK_HOLD_TIME = 0.01 -- Brief M1 hold during spam
+local FLICK_DURATION = 0.005
+local MAX_DISTANCE = math.huge
+local CLICK_INTERVAL = 0.12
+local CLICK_HOLD_TIME = 0.01
+
+-- ===== Aim mode settings =====
+local aimMode = "Distance"   -- "Distance" = closest in world | "FOV" = closest to crosshair inside circle
+local FOV_RADIUS = 100       -- FOV circle radius in pixels (FOV mode only)
+local showFovCircle = false
 
 local m2Held = false
-local spamEnabled = false -- Toggleable spam
+local spamEnabled = false
 local nextClickTime = 0
 
 local function getClosestEnemy()
     local closestPlayer = nil
-    local closestDistance = MAX_DISTANCE
+    local closestScore = math.huge
     local cameraPosition = Camera.CFrame.Position
-    
+    local screenCenter = Camera.ViewportSize / 2
+
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Team ~= LocalPlayer.Team then
             local character = player.Character
@@ -51,18 +57,33 @@ local function getClosestEnemy()
                 local humanoid = character:FindFirstChildOfClass("Humanoid")
                 if head and humanoid and humanoid.Health > 0 then
                     local headPosition = head.Position
-                    local distance = (cameraPosition - headPosition).Magnitude
-                    if distance < closestDistance then
-                        local raycastParams = RaycastParams.new()
-                        raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-                        raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
-                        
-                        local raycastResult = Workspace:Raycast(cameraPosition, (headPosition - cameraPosition), raycastParams)
-                        
-                        local clearLOS = not raycastResult or raycastResult.Instance:IsDescendantOf(character)
-                        
-                        if clearLOS then
-                            closestDistance = distance
+
+                    local raycastParams = RaycastParams.new()
+                    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+                    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}
+                    local raycastResult = Workspace:Raycast(cameraPosition, (headPosition - cameraPosition), raycastParams)
+                    local clearLOS = not raycastResult or raycastResult.Instance:IsDescendantOf(character)
+
+                    if clearLOS then
+                        local score
+
+                        if aimMode == "FOV" then
+                            local screenPoint, onScreen = Camera:WorldToViewportPoint(headPosition)
+                            if not onScreen then continue end
+
+                            local distFromCenter = (Vector2.new(screenPoint.X, screenPoint.Y) - screenCenter).Magnitude
+                            if distFromCenter > FOV_RADIUS then continue end
+
+                            score = distFromCenter -- closest to crosshair wins
+                        else
+                            local distance = (cameraPosition - headPosition).Magnitude
+                            if distance > MAX_DISTANCE then continue end
+
+                            score = distance -- closest in world wins
+                        end
+
+                        if score < closestScore then
+                            closestScore = score
                             closestPlayer = player
                         end
                     end
@@ -70,7 +91,7 @@ local function getClosestEnemy()
             end
         end
     end
-    
+
     return closestPlayer
 end
 
@@ -93,7 +114,18 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
         end
     end
 end)
+local fovCircle = Drawing.new("Circle")
+fovCircle.Thickness = 1
+fovCircle.NumSides = 64
+fovCircle.Filled = false
+fovCircle.Visible = false
+fovCircle.Color = Color3.fromRGB(255, 255, 255)
 
+RunService.RenderStepped:Connect(function()
+    fovCircle.Radius = FOV_RADIUS
+    fovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    fovCircle.Visible = showFovCircle and workaing and aimMode == "FOV"
+end)
 -- M2 Hold Spam Setup
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
@@ -153,7 +185,44 @@ else
    spamEnabled = true
 end
 end)
+LeftGroupBox:AddDropdown("AimMode", {
+    Text = "Targeting Mode",
+    Values = {"Distance", "FOV"},
+    Default = "Distance",
+    Callback = function(value)
+        aimMode = value
+    end
+})
 
+LeftGroupBox:AddSlider("FovRadius", {
+    Text = "FOV Radius (px)",
+    Min = 20,
+    Max = 500,
+    Default = 100,
+    Rounding = 0,
+    Callback = function(value)
+        FOV_RADIUS = value
+    end
+})
+
+LeftGroupBox:AddToggle("ShowFovCircle", {
+    Text = "Show FOV Circle",
+    Default = false,
+    Callback = function(state)
+        showFovCircle = state
+    end
+})
+
+LeftGroupBox:AddSlider("MaxDistance", {
+    Text = "Max Distance (Distance mode)",
+    Min = 50,
+    Max = 10000,
+    Default = 10000,
+    Rounding = 0,
+    Callback = function(value)
+        MAX_DISTANCE = value
+    end
+})
 LeftGroupBox:AddButton("Load Head Only triggerbot (X)", function()
 local enabled = true
 local toggle = Enum.KeyCode.X
